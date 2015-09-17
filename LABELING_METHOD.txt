@@ -1,0 +1,7 @@
+The label is the directionality label.
+
+The label is of int type, it has two possible values, 1 and 0.
+
+If in the data file, the “bid” value of current record is greater than previous record, the label should be 1. Otherwise, the value should be 0.
+
+For description of features, please check the comments in “ProcessedDataRecord.java”.
