@@ -1,4 +1,24 @@
-The project contains 3 classes.
+The structure of this project is like:
+- dtree
+	- DecisionTree.java
+	- Driver.java
+- prep
+	- DataPrep.java
+	- ProcessedDataRecord.java
+	- RawDataRecord.java
+
+Package dtree is for decision tree.
+Package prep is for data preparation.
+
+The dtree package contains 2 classes:
+
+DecisionTree:
+This class represents a decision tree, and provides methods to train and test based on a decision tree model. This class has an inner class “Node” representing a tree node.
+
+Driver:
+This class is for illustrating use of DecisionTree class.
+
+The prep package contains 3 classes:
 
 DataPrep:
 This class is responsible for prepare data for analysis. It has methods to read raw data records from file, process data, and write labeled data into a new cvs file. This class uses following 2 data classes. 

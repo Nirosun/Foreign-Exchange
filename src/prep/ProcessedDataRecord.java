@@ -7,33 +7,31 @@ package prep;
  *
  */
 public class ProcessedDataRecord {
-	/*
-	 * Number of minutes in the day (e.g. 20090501 01:40:01.009 => 100)
-	 * Time in a day could be a factor for foreign exchange price。
-	 * TODO: Consider other features, e.g. day in a week
-	 */
-	private int minutesOfDay;
 	
 	/*
-	 * Minimum bid in the time window
+	 * Average bid in the time window
 	 */
-	private double minBid;
+	private double avgBid;
 	
 	/*
-	 * Maximum bid in the time window
-	 */
-	private double maxBid;
-	
-	/*
-	 * Range of bid in the time window, showing the level of price change.
-	 * TODO: Consider introducing standard deviation
+	 * Range of bid (max - min) in the time window, showing the level of price change.
 	 */
 	private double rangeBid;
 	
 	/*
+	 * Difference between bid values of last record and first record in window
+	 */
+	private double diffBid;
+	
+	/*
 	 * Difference between "bid" and "ask" value, or so-called "pip" value
 	 */
-	private double bidAskDiff;
+	private double spread;
+	
+	/*
+	 * Difference between bid values of current record and last record
+	 */
+	private double deltaBid;
 	
 	/*
 	 * label for data record
@@ -44,55 +42,65 @@ public class ProcessedDataRecord {
 		
 	}
 	
-	public ProcessedDataRecord(int minutesOfDay, double minBid, double maxBid,
-			double rangeBid, double bidAskDiff, int label) {
+	public ProcessedDataRecord(double avgBid, double rangeBid, double diffBid,
+			double spread, double deltaBid, int label) {
 		super();
-		this.minutesOfDay = minutesOfDay;
-		this.minBid = minBid;
-		this.maxBid = maxBid;
+		this.avgBid = avgBid;
 		this.rangeBid = rangeBid;
-		this.bidAskDiff = bidAskDiff;
+		this.diffBid = diffBid;
+		this.spread = spread;
+		this.deltaBid = deltaBid;
 		this.label = label;
 	}
 
-	public int getMinutesOfDay() {
-		return minutesOfDay;
+
+	public double getAvgBid() {
+		return avgBid;
 	}
 
-	public void setMinutesOfDay(int minutesOfDay) {
-		this.minutesOfDay = minutesOfDay;
+
+	public void setAvgBid(double avgBid) {
+		this.avgBid = avgBid;
 	}
 
-	public double getMinBid() {
-		return minBid;
-	}
-
-	public void setMinBid(double minBid) {
-		this.minBid = minBid;
-	}
-
-	public double getMaxBid() {
-		return maxBid;
-	}
-
-	public void setMaxBid(double maxBid) {
-		this.maxBid = maxBid;
-	}
 
 	public double getRangeBid() {
 		return rangeBid;
 	}
 
+
 	public void setRangeBid(double rangeBid) {
 		this.rangeBid = rangeBid;
 	}
 
-	public double getBidAskDiff() {
-		return bidAskDiff;
+
+	public double getDiffBid() {
+		return diffBid;
 	}
 
-	public void setBidAskDiff(double bidAskDiff) {
-		this.bidAskDiff = bidAskDiff;
+
+	public void setDiffBid(double diffBid) {
+		this.diffBid = diffBid;
+	}
+
+
+	public double getSpread() {
+		return spread;
+	}
+
+
+	public void setSpread(double spread) {
+		this.spread = spread;
+	}
+
+
+	public double getDeltaBid() {
+		return deltaBid;
+	}
+
+
+	public void setDeltaBid(double deltaBid) {
+		this.deltaBid = deltaBid;
 	}
 
 	public int getLabel() {

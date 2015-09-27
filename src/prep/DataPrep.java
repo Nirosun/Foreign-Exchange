@@ -36,7 +36,8 @@ public class DataPrep {
 		List<RawDataRecord> rawRecords = readRecords(inputFileName);
 		List<ProcessedDataRecord> processedRecords = new ArrayList<ProcessedDataRecord>();
 
-		for (int i = 0; i < rawRecords.size(); i++) {
+		// skip first 100 records (initial records may introduce significant error due to less data)
+		for (int i = 100; i < rawRecords.size(); i++) {
 			ProcessedDataRecord p = processRecord(rawRecords, i);
 			processedRecords.add(p);
 		}
@@ -87,13 +88,13 @@ public class DataPrep {
 			List<ProcessedDataRecord> records) {
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(
 				outputFileName))) {
+			writer.write("avg_bid,range_bid,diff_bid,delta_bid,spread,label\n");
 			for (ProcessedDataRecord r : records) {
 				StringBuilder sb = new StringBuilder();
-				sb.append(r.getMinutesOfDay()).append(",")
-						.append(r.getMinBid()).append(",")
-						.append(r.getMaxBid()).append(",")
-						.append(r.getRangeBid()).append(",")
-						.append(r.getBidAskDiff()).append(",");
+				sb.append(r.getAvgBid()).append(",").append(r.getRangeBid())
+						.append(",").append(r.getDiffBid()).append(",")
+						.append(r.getDeltaBid()).append(",")
+						.append(r.getSpread()).append(",");
 				sb.append(r.getLabel()).append("\n");
 				writer.write(sb.toString());
 			}
@@ -114,40 +115,47 @@ public class DataPrep {
 	 */
 	public ProcessedDataRecord processRecord(List<RawDataRecord> rawRecords,
 			int index) {
-		RawDataRecord currRecord = rawRecords.get(index);
+		RawDataRecord currRecord = rawRecords.get(index - 1);
+		RawDataRecord nextRecord = rawRecords.get(index);
+
 		ProcessedDataRecord p = new ProcessedDataRecord();
 		DateTime currTime = currRecord.getTime();
 
 		double minBid = currRecord.getBid();
 		double maxBid = minBid;
 
-		p.setMinutesOfDay(currRecord.getTime().getMinuteOfDay());
-		p.setBidAskDiff(currRecord.getAsk() - currRecord.getBid());
+		p.setSpread(currRecord.getAsk() - currRecord.getBid());
 
 		// calculate the directionality label
-		int label = (index == 0 || currRecord.getBid() <= rawRecords.get(
-				index - 1).getBid()) ? 0 : 1;
+		int label = nextRecord.getBid() >= currRecord.getBid() ? 1 : 0;
 
 		p.setLabel(label);
+		
+		double avgBid = 0;
 
-		for (int i = index - 1; i >= 0; i--) {
+		int i;
+		for (i = index - 1; i >= 0; i--) {
 			RawDataRecord r = rawRecords.get(i);
 			if (r.getTime().isAfter(currTime.minus(WINDOW_SIZE_IN_MILLIS))) {
 				maxBid = Math.max(maxBid, r.getBid());
 				minBid = Math.min(minBid, r.getBid());
+				avgBid += r.getBid();
 			} else {
 				break;
 			}
 		}
 
-		p.setMaxBid(maxBid);
-		p.setMinBid(minBid);
+		avgBid = avgBid / (index - i);
+		
+		p.setAvgBid(avgBid);
 		p.setRangeBid(maxBid - minBid);
+		p.setDiffBid(currRecord.getBid() - rawRecords.get(i >= 0 ? i : 0).getBid());
+		p.setDeltaBid(currRecord.getBid() - rawRecords.get(index - 2).getBid());
 
 		return p;
 	}
 
 	public static void main(String[] args) {
-		new DataPrep().prepareData("EURUSD-2009-05-sample.csv", "output.csv");
+		new DataPrep().prepareData("sample_raw.csv", "sample_labeled.csv");
 	}
 }
