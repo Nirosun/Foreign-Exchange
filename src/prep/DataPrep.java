@@ -42,7 +42,11 @@ public class DataPrep {
 			processedRecords.add(p);
 		}
 
-		writeRecords(outputFileName, processedRecords);
+//		writeContinuousRecords(outputFileName, processedRecords);
+		
+		List<boolean[]> binaryRecords = binarizeRecords(processedRecords);
+		
+		writeBinaryRecords(outputFileName, binaryRecords);
 	}
 
 	/**
@@ -75,16 +79,43 @@ public class DataPrep {
 
 		return records;
 	}
-
+	
 	/**
-	 * Write processed (labeled) data into an output csv file
+	 * Write binary labeled data into an output csv file
 	 * 
 	 * @param outputFileName
 	 *            output file name
 	 * @param records
 	 *            list of labeled data records
 	 */
-	public void writeRecords(String outputFileName,
+	public void writeBinaryRecords(String outputFileName,
+			List<boolean[]> records) {
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(
+				outputFileName))) {
+			writer.write("avg_bid,range_bid,diff_bid,delta_bid,spread,label\n");
+			for (boolean[] r : records) {
+				StringBuilder sb = new StringBuilder();
+				int i;
+				for (i = 0; i < r.length - 1; i ++) {
+					sb.append(r[i]).append(",");
+				}
+				sb.append(r[i]).append("\n");
+				writer.write(sb.toString());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Write continuous processed (labeled) data into an output csv file
+	 * 
+	 * @param outputFileName
+	 *            output file name
+	 * @param records
+	 *            list of labeled data records
+	 */
+	public void writeContinuousRecords(String outputFileName,
 			List<ProcessedDataRecord> records) {
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(
 				outputFileName))) {
@@ -154,8 +185,44 @@ public class DataPrep {
 
 		return p;
 	}
+	
+	private List<boolean[]> binarizeRecords(List<ProcessedDataRecord> contRecords) {
+		
+		double thresholdAvgBid = 0;
+		double thresholdRangeBid = 0;
+		double thresholdDiffBid = 0;
+		double thresholdDeltaBid = 0;
+		double thresholdSpread = 0;
+		
+		for ( ProcessedDataRecord r : contRecords ) {
+			thresholdAvgBid += r.getAvgBid();
+			thresholdRangeBid += r.getRangeBid();
+			thresholdSpread += r.getSpread();
+		}
+		
+		thresholdAvgBid /= contRecords.size();
+		thresholdRangeBid /= contRecords.size();
+		thresholdSpread /= contRecords.size();
+
+		List<boolean[]> binaryRecords = new ArrayList<>();
+		
+		for ( ProcessedDataRecord r : contRecords ) {
+			boolean[] binaries = new boolean[6];
+			
+			binaries[0] = r.getAvgBid() > thresholdAvgBid;
+			binaries[1] = r.getRangeBid() > thresholdRangeBid;
+			binaries[2] = r.getDiffBid() > thresholdDiffBid;
+			binaries[3] = r.getDeltaBid() > thresholdDeltaBid;
+			binaries[4] = r.getSpread() > thresholdSpread;
+			binaries[5] = r.getLabel() == 1;
+			
+			binaryRecords.add(binaries);
+		}
+		
+		return binaryRecords;
+	}
 
 	public static void main(String[] args) {
-		new DataPrep().prepareData("sample_raw.csv", "sample_labeled.csv");
+		new DataPrep().prepareData("sample_raw_0912.csv", "sample_labeled_0912.csv");
 	}
 }

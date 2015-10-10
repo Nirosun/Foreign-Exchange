@@ -16,23 +16,37 @@ import java.util.Set;
  *
  */
 public class DecisionTree {
-	private static final double AVG_BID_THRESHOLD = 1.32;
-
-	private static final double RANGE_BID_THRESHOLD = 6.4E-4;
-
-	private static final double DIFF_BID_THRESHOLD = 0;
-
-	private static final double DELTA_BID_THRESHOLD = 0;
-
-	private static final double SPREAD_THRESHOLD = 8.77E-5;
 
 	private Node root;
 
 	private List<String> features; // names of features
 
-	public DecisionTree() {
-		root = new Node(null);
-		features = new ArrayList<>();
+	public DecisionTree(List<String> features) {
+		this.root = new Node(null);
+		this.features = features;
+	}
+	
+	public void train(List<boolean[]> records, Set<Integer> unusedFeatures) {
+		Set<Integer> recordIds = new HashSet<>(); // record IDs related to current node
+		
+		for (int i = 0; i < features.size(); i++) {
+			unusedFeatures.add(i);
+		}
+		
+		for (int i = 0; i < records.size(); i ++) {
+			boolean[] binaries = records.get(i);
+			int len = binaries.length;
+
+			if (binaries[len - 1]) {
+				root.pos++;
+			} else {
+				root.neg++;
+			}
+
+			recordIds.add(i);
+		}
+		
+		trainNode(root, records, recordIds, unusedFeatures);		
 	}
 
 	/**
@@ -65,8 +79,7 @@ public class DecisionTree {
 				int len = strs.length;
 				boolean[] binaries = new boolean[len];
 				for (int i = 0; i < len; i++) {
-					double d = Double.parseDouble(strs[i]);
-					binaries[i] = toBinaryValue(i, d);
+					binaries[i] = Boolean.parseBoolean(strs[i]);
 				}
 
 				if (binaries[len - 1]) {
@@ -107,11 +120,10 @@ public class DecisionTree {
 				boolean[] binaries = new boolean[len];
 
 				for (int i = 0; i < len; i++) {
-					double d = Double.parseDouble(strs[i]);
-					binaries[i] = toBinaryValue(i, d);
+					binaries[i] = Boolean.parseBoolean(strs[i]);
 				}
 
-				boolean decision = decide(root, binaries);
+				boolean decision = decide(binaries);
 
 				if (decision != binaries[len - 1]) {
 					errCnt++;
@@ -124,9 +136,20 @@ public class DecisionTree {
 
 		return errCnt / (double) totalCnt;
 	}
+	
+	/**
+	 * Decide the label based on trained tree (API)
+	 * 
+	 * @param record
+	 *            record to test
+	 * @return label value (true <-> 1, false <-> 0)
+	 */
+	public boolean decide(boolean[] record) {
+		return decide(root, record);
+	}
 
 	/**
-	 * Decide the label based on trained tree
+	 * Decide the label based on trained tree on a node (for internal)
 	 * 
 	 * @param n
 	 *            current node
@@ -134,7 +157,7 @@ public class DecisionTree {
 	 *            record to test
 	 * @return label value (true <-> 1, false <-> 0)
 	 */
-	public boolean decide(Node n, boolean[] record) {
+	private boolean decide(Node n, boolean[] record) {
 		if (n.featureName == null) {
 			return n.pos > n.neg;
 		}
@@ -255,31 +278,6 @@ public class DecisionTree {
 		trainNode(n.left, records, leftRecordIds, new HashSet<>(unusedFeatures));
 		trainNode(n.right, records, rightRecordIds, new HashSet<>(
 				unusedFeatures));
-	}
-
-	/**
-	 * Map feature values in double type to binery values
-	 * 
-	 * @param id
-	 *            index of the feature
-	 * @param val
-	 *            value of original feature
-	 * @return boolean value representation of the feature
-	 */
-	private boolean toBinaryValue(int id, double val) {
-		if (id == 0) {
-			return val > AVG_BID_THRESHOLD;
-		} else if (id == 1) {
-			return val > RANGE_BID_THRESHOLD;
-		} else if (id == 2) {
-			return val > DIFF_BID_THRESHOLD;
-		} else if (id == 3) {
-			return val > DELTA_BID_THRESHOLD;
-		} else if (id == 4) {
-			return val > SPREAD_THRESHOLD;
-		} else {
-			return val == 1;
-		}
 	}
 
 	/*
