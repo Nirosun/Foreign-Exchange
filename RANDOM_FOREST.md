@@ -1,17 +1,16 @@
 # Random Forest
 
 ## Output
-The output of the main method in forest.Driver class is as follows. 
-
-In this run, it grew 50 trees for the random forest, calculated the performance statistics (error rate and accuracy) of the forest after each tree was added into the forest. 
+In this run, it grew 50 trees for the random forest, calculated the performance statistics (error rate and accuracy) of the forest after each tree was added into the forest.
 
 Then, the serialization/deserialization methods (using java object streams) for RandomForest objects were tested.
 
 Finally, it tested the performance of the grown random forest on the test file.
 
-The output is as folows:
+The output is as follows:
+
 ```
-Training: 
+Training:
 1 trees, error rate: 0.4091860608299471, accuracy: 0.5908139391700529
 2 trees, error rate: 0.406455617628802, accuracy: 0.593544382371198
 3 trees, error rate: 0.4026134122287968, accuracy: 0.5973865877712032
@@ -47,21 +46,22 @@ Serializing forest into file...
 
 Deserializing forest from file...
 
-Testing: 
+Testing:
 Test error rate: 0.4308080808080808, accuracy: 0.5691919191919192
 
 Time elapsed: 692 ms
 ```
 
-There were 5 features in total, and for building each tree, 2 features were used. 
+There were 5 features in total, and for building each tree, 2 features were used.
 
 For comparison, if applying a single decision tree with all features, the performance would be:
+
 ```
 Test error: 0.4313131313131313, accuracy: 0.5686868686868687
 ```
 
 ## Analysis
-From the results, we can see that the performance of using random forest is almost same with using a single decision tree. Possible reason is that: 
+From the results, we can see that the performance of using random forest is almost same with using a single decision tree. Possible reason is that:
 
 The distribution of the training label is: 42% true, 58% false. For most of the small trees, because their features were not distinguishable enough, their decisions were dominated by the prior of the label. Thus, they always voted FALSE. Only for trees using distinguishable features (“diff_bid” and “delta_bid”), they would vote for TRUE sometime. Because the number of trees voting for TRUE was always less than the number of trees voting for FALSE, the majority vote result of the forest would always be FALSE. Thus the accuracy was 0.57, similar to proportion of FALSE labels.
 

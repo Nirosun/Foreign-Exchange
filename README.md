@@ -1,6 +1,6 @@
 # Foreign-Exchange
 
-Please check README.md for project structure and descriptions of classes.
+Please check OVERVIEW.md for project structure and descriptions of classes.
 
 Please check LABELING_METHOD.md for introduction of the label and features.
 
