@@ -1,7 +1,11 @@
+# Label and Features
+
+## Label
 The label is the directionality label of the “bid” value. It has two values: TRUE, FALSE.
 
 The label is decided in this way: for each record in data file (AKA “current record”), starting from next record, check if the bid value of this record is different from the bid value of current record. If different, if it’s greater, set label as TRUE, else, set label as FALSE. If the bid value is the same with bid value of current record, check next record, do this until a record with different bid value is found.
 
+## Features
 There are currently 5 features. They are:
 
 “avg_bid”: 
