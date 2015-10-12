@@ -3,6 +3,7 @@ package dtree;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -10,30 +11,43 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * This class represents a decision tree
+ * This class represents a decision tree. It includes methods to train the tree,
+ * use the tree to make decision, and test performance of the tree
  * 
  * @author zzuo
  *
  */
-public class DecisionTree {
+public class DecisionTree implements Serializable {
 
-	private Node root;
+	private static final long serialVersionUID = 3285710322176522954L;
 
-	private List<String> features; // names of features
+	/*
+	 * The root node of the decision tree
+	 */
+	private TreeNode root;
+
+	/*
+	 * names of all features
+	 */
+	private List<String> features;
 
 	public DecisionTree(List<String> features) {
-		this.root = new Node(null);
+		this.root = new TreeNode(null);
 		this.features = features;
 	}
-	
-	public void train(List<boolean[]> records, Set<Integer> unusedFeatures) {
-		Set<Integer> recordIds = new HashSet<>(); // record IDs related to current node
-		
-		for (int i = 0; i < features.size(); i++) {
-			unusedFeatures.add(i);
-		}
-		
-		for (int i = 0; i < records.size(); i ++) {
+
+	/**
+	 * Train the tree (used by RandomForest)
+	 * 
+	 * @param records
+	 * @param featuresIds
+	 *            feature indexes for this tree
+	 */
+	public void train(List<boolean[]> records, Set<Integer> featuresIds) {
+		Set<Integer> recordIds = new HashSet<>(); // record IDs related to
+													// current node
+
+		for (int i = 0; i < records.size(); i++) {
 			boolean[] binaries = records.get(i);
 			int len = binaries.length;
 
@@ -45,22 +59,25 @@ public class DecisionTree {
 
 			recordIds.add(i);
 		}
-		
-		trainNode(root, records, recordIds, unusedFeatures);		
+
+		trainNode(root, records, recordIds, featuresIds);
 	}
 
 	/**
-	 * Train the tree
+	 * Train the tree (used when creating the tree in standalone mode, i.e. no
+	 * random forest)
 	 * 
 	 * @param trainFileName
 	 */
 	public void train(String trainFileName) {
-		List<boolean[]> records = new ArrayList<>(); // training records in
-														// boolean format
-		Set<Integer> recordIds = new HashSet<>(); // record IDs related to
-													// current node
-		Set<Integer> unusedFeatures = new HashSet<>(); // unused features until
-														// now
+		// training records in boolean format
+		List<boolean[]> records = new ArrayList<>();
+
+		// record IDs related to current node
+		Set<Integer> recordIds = new HashSet<>();
+
+		// unused features until now
+		Set<Integer> unusedFeatures = new HashSet<>();
 
 		// initialize the root node and the collections above
 		try (BufferedReader br = new BufferedReader(new FileReader(
@@ -123,6 +140,7 @@ public class DecisionTree {
 					binaries[i] = Boolean.parseBoolean(strs[i]);
 				}
 
+				// make decision on the record
 				boolean decision = decide(binaries);
 
 				if (decision != binaries[len - 1]) {
@@ -136,28 +154,30 @@ public class DecisionTree {
 
 		return errCnt / (double) totalCnt;
 	}
-	
+
 	/**
-	 * Decide the label based on trained tree (API)
+	 * Make a decision based on trained tree on a given record (API)
 	 * 
 	 * @param record
-	 *            record to test
-	 * @return label value (true <-> 1, false <-> 0)
+	 *            record to make decision on
+	 * @return decision
 	 */
 	public boolean decide(boolean[] record) {
 		return decide(root, record);
 	}
 
 	/**
-	 * Decide the label based on trained tree on a node (for internal)
+	 * Make decision based on trained tree on a given record (for internal)
 	 * 
 	 * @param n
 	 *            current node
 	 * @param record
-	 *            record to test
-	 * @return label value (true <-> 1, false <-> 0)
+	 *            record to make decision on
+	 * @return decision
 	 */
-	private boolean decide(Node n, boolean[] record) {
+	private boolean decide(TreeNode n, boolean[] record) {
+		// if feature name is null, means this node is a leaf node
+		// decision should be made on this node
 		if (n.featureName == null) {
 			return n.pos > n.neg;
 		}
@@ -189,19 +209,20 @@ public class DecisionTree {
 	 *            features that haven't been used until current node (under
 	 *            specific path)
 	 */
-	private void trainNode(Node n, List<boolean[]> records,
+	private void trainNode(TreeNode n, List<boolean[]> records,
 			Set<Integer> recordIds, Set<Integer> unusedFeatures) {
-		// end condition
+		// check if there's no need to split on this node
 		if (n.pos == 0 || n.neg == 0 || unusedFeatures.isEmpty()) {
 			return;
 		}
 
 		double maxMI = 0.0; // maximum mutual information
 		int maxId = -1; // id of the feature that maximize MI
-		n.left = new Node(null);
-		n.right = new Node(null);
+		n.left = new TreeNode(null);
+		n.right = new TreeNode(null);
 
-		for (int i : unusedFeatures) { // check all possible features
+		// consider all unused features for this node to split on
+		for (int i : unusedFeatures) {
 			n.featureName = features.get(i);
 
 			n.left.pos = 0;
@@ -209,12 +230,13 @@ public class DecisionTree {
 			n.right.pos = 0;
 			n.right.neg = 0;
 
-			for (int id : recordIds) { // divide records to left and right
-										// subtrees
+			// divide records to left and right subtrees
+			for (int id : recordIds) {
 				boolean[] record = records.get(id);
 				int len = record.length;
-				if (record[i]) { // assign records with positive feature value
-									// to left subtree
+
+				// assign records with positive feature values to left subtree
+				if (record[i]) {
 					if (record[len - 1]) {
 						n.left.pos++;
 					} else {
@@ -236,7 +258,8 @@ public class DecisionTree {
 			}
 		}
 
-		if (maxMI <= 0) { // no information gain
+		if (maxMI <= 0) {
+			// no information gain, stop splitting
 			n.featureName = null;
 			n.left = null;
 			n.right = null;
@@ -275,75 +298,9 @@ public class DecisionTree {
 
 		unusedFeatures.remove(maxId); // used current feature
 
+		// train children nodes
 		trainNode(n.left, records, leftRecordIds, new HashSet<>(unusedFeatures));
 		trainNode(n.right, records, rightRecordIds, new HashSet<>(
 				unusedFeatures));
-	}
-
-	/*
-	 * Represent a tree node
-	 */
-	private class Node {
-		/*
-		 * name of feature assigned to this node
-		 */
-		String featureName;
-
-		/*
-		 * number of positive labels
-		 */
-		int pos;
-
-		/*
-		 * number of negative labels
-		 */
-		int neg;
-
-		/*
-		 * left child, with feature value in parent positive
-		 */
-		Node left;
-
-		/*
-		 * right child, with feature value in parent negative
-		 */
-		Node right;
-
-		public Node(String featureName) {
-			this.featureName = featureName;
-			pos = 0;
-			neg = 0;
-		}
-
-		/**
-		 * Calculate entropy of the node
-		 *
-		 * @return entropy of the node
-		 */
-		public double entropy() {
-			if (pos == 0 || neg == 0)
-				return 0.0;
-
-			double res = pos / (double) (pos + neg)
-					* Math.log(pos / (double) (pos + neg)) / Math.log(2);
-			res += neg / (double) (pos + neg)
-					* Math.log(neg / (double) (pos + neg)) / Math.log(2);
-			return -res;
-		}
-
-		/**
-		 * calculate the mutual information (information gain)
-		 * 
-		 * @return current mutual information of this node
-		 */
-		public double mutualInformation() {
-			int total = pos + neg;
-			double mi = entropy() - (left.neg + left.pos) / (double) total
-					* left.entropy() - (right.neg + right.pos) / (double) total
-					* right.entropy();
-
-			return mi;
-		}
-
 	}
 }

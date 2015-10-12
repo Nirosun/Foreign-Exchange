@@ -24,14 +24,14 @@ public class ProcessedDataRecord {
 	private double diffBid;
 	
 	/*
+	 * Difference between bid values of current record and previous record
+	 */
+	private double deltaBid;
+	
+	/*
 	 * Difference between "bid" and "ask" value, or so-called "pip" value
 	 */
 	private double spread;
-	
-	/*
-	 * Difference between bid values of current record and last record
-	 */
-	private double deltaBid;
 	
 	/*
 	 * label for data record

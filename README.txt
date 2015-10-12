@@ -6,9 +6,20 @@ The structure of this project is like:
 	- DataPrep.java
 	- ProcessedDataRecord.java
 	- RawDataRecord.java
+- forest
+	- RandomForest.java
+	- Driver.java
 
+Package forest is for random forest.
 Package dtree is for decision tree.
 Package prep is for data preparation.
+
+The forest package contains 2 classes:
+
+RandomForest:
+
+Driver:
+This class is for illustrating the use of the RandomForest class, including training a random forest, serialize/deserialize the RandomForest instance, and test the performance of the random forest.
 
 The dtree package contains 2 classes:
 
