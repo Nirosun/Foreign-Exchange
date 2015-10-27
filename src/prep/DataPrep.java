@@ -13,6 +13,9 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+
 /**
  * This class is responsible for prepare data for analysis. It has methods to
  * read raw data records from file, process data, and write labeled data into a
@@ -23,7 +26,8 @@ import org.joda.time.format.DateTimeFormatter;
  */
 public class DataPrep {
 
-	private static final long WINDOW_SIZE_IN_MILLIS = 1000 * 60 /* seconds */* 5 /* minutes */;
+	private static final long WINDOW_SIZE_IN_MILLIS = 1000 * 60 /* seconds */
+			* 5 /* minutes */;
 
 	/**
 	 * Prepare data for analysis (reads data, process data, and write data)
@@ -44,18 +48,6 @@ public class DataPrep {
 			processedRecords.add(p);
 		}
 
-		int ones = 0;
-		int zeros = 0;
-		for (int i = 0; i < processedRecords.size(); i++) {
-			if (processedRecords.get(i).getLabel() == 1) {
-				ones++;
-			} else {
-				zeros++;
-			}
-		}
-
-		System.out.println(ones + " " + zeros);
-
 		writeContinuousRecords("sample_labeled_cont.csv", processedRecords);
 
 		List<boolean[]> binaryRecords = binarizeRecords(processedRecords);
@@ -75,8 +67,8 @@ public class DataPrep {
 		DateTimeFormatter formatter = DateTimeFormat
 				.forPattern("yyyyMMdd HH:mm:ss.SSS");
 
-		try (BufferedReader reader = new BufferedReader(new FileReader(
-				inputFileName))) {
+		try (BufferedReader reader = new BufferedReader(
+				new FileReader(inputFileName))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
 				String[] strs = line.split(",");
@@ -104,8 +96,8 @@ public class DataPrep {
 	 */
 	public void writeBinaryRecords(String outputFileName,
 			List<boolean[]> records) {
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(
-				outputFileName))) {
+		try (BufferedWriter writer = new BufferedWriter(
+				new FileWriter(outputFileName))) {
 			writer.write("avg_bid,range_bid,diff_bid,delta_bid,spread,label\n");
 			for (boolean[] r : records) {
 				StringBuilder sb = new StringBuilder();
@@ -131,8 +123,8 @@ public class DataPrep {
 	 */
 	public void writeContinuousRecords(String outputFileName,
 			List<ProcessedDataRecord> records) {
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(
-				outputFileName))) {
+		try (BufferedWriter writer = new BufferedWriter(
+				new FileWriter(outputFileName))) {
 			writer.write("avg_bid,range_bid,diff_bid,delta_bid,spread,label\n");
 			for (ProcessedDataRecord r : records) {
 				StringBuilder sb = new StringBuilder();
@@ -203,8 +195,8 @@ public class DataPrep {
 
 		p.setAvgBid(avgBid);
 		p.setRangeBid(maxBid - minBid);
-		p.setDiffBid(currRecord.getBid()
-				- rawRecords.get(i >= 0 ? i : 0).getBid());
+		p.setDiffBid(
+				currRecord.getBid() - rawRecords.get(i >= 0 ? i : 0).getBid());
 		p.setDeltaBid(currRecord.getBid() - rawRecords.get(index - 2).getBid());
 
 		return p;
@@ -264,12 +256,12 @@ public class DataPrep {
 	public void splitTrainAndTestFiles(String inputFileName,
 			String trainFileName, String testFileName) {
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(
-					inputFileName));
-			PrintWriter trainWriter = new PrintWriter(new FileWriter(
-					trainFileName));
-			PrintWriter testWriter = new PrintWriter(new FileWriter(
-					testFileName));
+			BufferedReader reader = new BufferedReader(
+					new FileReader(inputFileName));
+			PrintWriter trainWriter = new PrintWriter(
+					new FileWriter(trainFileName));
+			PrintWriter testWriter = new PrintWriter(
+					new FileWriter(testFileName));
 
 			String line = null;
 
@@ -298,6 +290,82 @@ public class DataPrep {
 		}
 	}
 
+	/**
+	 * Transmit data from csv file to Cassandra database
+	 * 
+	 * @param trainFileName
+	 *            training data file name
+	 * @param testFileName
+	 *            testing data file name
+	 */
+	public void csvToCassandra(String trainFileName, String testFileName) {
+		Cluster cluster;
+		Session session;
+
+		cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+		session = cluster.connect("test");
+
+		session.execute("DROP TABLE IF EXISTS train_data");
+		session.execute("DROP TABLE IF EXISTS test_data");
+
+		session.execute(
+				"CREATE TABLE train_data (id bigint PRIMARY KEY, avg_bid boolean, range_bid boolean, diff_bid boolean, delta_bid boolean, spread boolean, label boolean)");
+		session.execute(
+				"CREATE TABLE test_data (id bigint PRIMARY KEY, avg_bid boolean, range_bid boolean, diff_bid boolean, delta_bid boolean, spread boolean, label boolean)");
+
+		insertData(trainFileName, true, session);
+		insertData(testFileName, false, session);
+
+		cluster.close();
+	}
+
+	/**
+	 * Insert data into table in Cassandra (for training or testing)
+	 * 
+	 * @param fileName
+	 *            data file (csv) name
+	 * @param isTrain
+	 *            is the data for training
+	 * @param session
+	 *            Cassandra session
+	 */
+	private void insertData(String fileName, boolean isTrain, Session session) {
+
+		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+			String line = br.readLine();
+
+			int id = 1;
+
+			while ((line = br.readLine()) != null) {
+				String[] strs = line.split(",");
+
+				StringBuilder sb = new StringBuilder();
+
+				if (isTrain) {
+					sb.append(
+							"INSERT INTO train_data (id, avg_bid, range_bid, diff_bid, delta_bid, spread, label) VALUES (");
+				} else {
+					sb.append(
+							"INSERT INTO test_data (id, avg_bid, range_bid, diff_bid, delta_bid, spread, label) VALUES (");
+				}
+
+				sb.append(id);
+
+				for (int i = 0; i < strs.length; i++) {
+					sb.append(", ").append(strs[i]);
+				}
+
+				sb.append(")");
+
+				session.execute(sb.toString());
+
+				id++;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static void main(String[] args) {
 		new DataPrep().prepareData("sample_raw.csv", "sample_labeled.csv");
 
@@ -308,5 +376,8 @@ public class DataPrep {
 
 		System.out.println("Train and test files splitted.");
 
+		new DataPrep().csvToCassandra("sample_train.csv", "sample_test.csv");
+
+		System.out.println("Data transmitted into Cassandra.");
 	}
 }

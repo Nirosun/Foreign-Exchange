@@ -1,5 +1,7 @@
 package forest;
 
+import com.datastax.driver.core.Cluster;
+
 /**
  * This class is for illustrating the use of the RandomForest class
  * 
@@ -16,24 +18,18 @@ public class Driver {
 		// create a random forest
 		RandomForest forest = new RandomForest(N);
 
-		String trainFile = "sample_train.csv";
-		String testFile = "sample_test.csv";
+		Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1")
+				.build();
 
 		System.out.println("Training: ");
 
-		forest.train(trainFile);
-
-		System.out.println("\nSerializing forest into file...");
-
-		RandomForest.serialize(forest, "forest.ser");
-
-		System.out.println("\nDeserializing forest from file...");
-
-		forest = RandomForest.deserialize("forest.ser");
+		forest.train(cluster);
 
 		System.out.println("\nTesting: ");
 
-		forest.test(testFile);
+		forest.test(cluster);
+
+		cluster.close();
 
 		long endTime = System.currentTimeMillis();
 

@@ -3,3 +3,4 @@
 /bin/
 *.jar
 *.DS_Store
+*.ser

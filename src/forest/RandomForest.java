@@ -1,9 +1,7 @@
 package forest;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -13,6 +11,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 
 import dtree.DecisionTree;
 
@@ -69,13 +72,18 @@ public class RandomForest implements Serializable {
 	 * 
 	 * @param trainFileName
 	 */
-	public void train(String trainFileName) {
-		List<boolean[]> records = readInRecords(trainFileName, true);
+	public void train(Cluster cluster) {
+		List<boolean[]> records = readInRecordsFromCassandra(cluster, true);
+
+		createPerformanceTable(cluster, true);
 
 		numOfFeaturesToBuildTree = (int) Math.sqrt(features.size());
 
-		numOfTrainRecordsToBuildTree = (int) (FRACTION_TRAINING_RECORDS * records
-				.size());
+		numOfTrainRecordsToBuildTree = (int) (FRACTION_TRAINING_RECORDS
+				* records.size());
+
+		features = Arrays.asList(new String[] { "avg_bid", "range_bid",
+				"diff_bid", "delta_bid", "spread" });
 
 		// grow N trees
 		for (int i = 0; i < N; i++) {
@@ -97,6 +105,8 @@ public class RandomForest implements Serializable {
 
 			System.out.println((i + 1) + " trees, error rate: " + errRate
 					+ ", accuracy: " + (1 - errRate));
+
+			insertPerformance(cluster, (i + 1), 1 - errRate, true);
 		}
 	}
 
@@ -106,13 +116,17 @@ public class RandomForest implements Serializable {
 	 * 
 	 * @param testFileName
 	 */
-	public void test(String testFileName) {
-		List<boolean[]> records = readInRecords(testFileName, false);
+	public void test(Cluster cluster) {
+		List<boolean[]> records = readInRecordsFromCassandra(cluster, false);
+
+		createPerformanceTable(cluster, false);
 
 		double errRate = testInternal(records);
 
-		System.out.println("Test error rate: " + errRate + ", accuracy: "
-				+ (1 - errRate));
+		insertPerformance(cluster, N, 1 - errRate, false);
+
+		System.out.println(
+				"Test error rate: " + errRate + ", accuracy: " + (1 - errRate));
 	}
 
 	/**
@@ -189,8 +203,8 @@ public class RandomForest implements Serializable {
 		RandomForest forest = null;
 
 		try {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(
-					fileName));
+			ObjectInputStream in = new ObjectInputStream(
+					new FileInputStream(fileName));
 			forest = (RandomForest) in.readObject();
 			in.close();
 		} catch (IOException | ClassNotFoundException e) {
@@ -249,40 +263,88 @@ public class RandomForest implements Serializable {
 	}
 
 	/**
-	 * Read in records from data file (train or test)
+	 * Create validation (during training) or testing performance table
 	 * 
-	 * @param fileName
+	 * @param cluster
+	 *            Cassandra cluster
 	 * @param isTrain
-	 *            is this for training (or for testing)
-	 * @return
+	 *            is this for training
 	 */
-	private List<boolean[]> readInRecords(String fileName, boolean isTrain) {
-		List<boolean[]> records = new ArrayList<>(); // records in boolean
-														// format
+	private void createPerformanceTable(Cluster cluster, boolean isTrain) {
+		Session session = cluster.connect("test");
 
-		// read in records from training file
-		try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-			String line = br.readLine();
+		String tableName = isTrain ? "validation_perf" : "test_perf";
 
-			// if is for training, load feature names from first line of file
-			if (isTrain) {
-				features.addAll(Arrays.asList(line.split(",")));
-				features.remove(features.size() - 1);
-			}
+		session.execute("DROP TABLE IF EXISTS " + tableName);
+		session.execute("CREATE TABLE " + tableName
+				+ " (trees int PRIMARY KEY, accuracy double)");
+	}
 
-			while ((line = br.readLine()) != null) {
-				String[] strs = line.split(",");
-				int len = strs.length;
-				boolean[] binaries = new boolean[len];
-				for (int i = 0; i < len; i++) {
-					binaries[i] = Boolean.parseBoolean(strs[i]);
-				}
-				records.add(binaries);
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+	/**
+	 * Insert performance stats into Cassandra database table, for validation
+	 * (during training) or testing
+	 * 
+	 * @param cluster
+	 *            Cassandra cluster
+	 * @param trees
+	 *            current number of trees in forest
+	 * @param accuracy
+	 *            validation accuracy
+	 * @param isTrain
+	 *            is this for training
+	 */
+	private void insertPerformance(Cluster cluster, int trees, double accuracy,
+			boolean isTrain) {
+		Session session = cluster.connect("test");
+
+		String tableName = isTrain ? "validation_perf" : "test_perf";
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("INSERT INTO ");
+		sb.append(tableName);
+		sb.append(" (trees, accuracy) VALUES (");
+		sb.append(trees).append(", ").append(accuracy).append(")");
+
+		session.execute(sb.toString());
+	}
+
+	/**
+	 * Read in data records from Cassandra database, can read data for training
+	 * or testing
+	 * 
+	 * @param cluster
+	 *            Cassandra cluster
+	 * @param isTrain
+	 *            is this for training
+	 * @return list of boolean records
+	 */
+	private List<boolean[]> readInRecordsFromCassandra(Cluster cluster,
+			boolean isTrain) {
+		Session session = cluster.connect("test");
+
+		ResultSet rs;
+
+		if (isTrain) {
+			rs = session.execute("SELECT * FROM train_data");
+		} else {
+			rs = session.execute("SELECT * FROM test_data");
 		}
 
-		return records;
+		List<boolean[]> results = new ArrayList<>();
+
+		for (Row row : rs) {
+			boolean[] binaries = new boolean[6];
+			binaries[0] = row.getBool("avg_bid");
+			binaries[1] = row.getBool("range_bid");
+			binaries[2] = row.getBool("diff_bid");
+			binaries[3] = row.getBool("delta_bid");
+			binaries[4] = row.getBool("spread");
+			binaries[5] = row.getBool("label");
+
+			results.add(binaries);
+		}
+
+		return results;
 	}
 }

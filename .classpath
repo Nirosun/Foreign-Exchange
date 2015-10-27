@@ -5,5 +5,11 @@
 	<classpathentry kind="lib" path="joda-time-2.8.2.jar"/>
 	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/avro-1.7.7.jar"/>
 	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/gson-2.4.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/netty-3.9.0.Final.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/guava-18.0.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/metrics-core-3.0.2.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/slf4j-simple-1.7.12.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/slf4j-api-1.7.12.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/cassandra-driver-core-2.1.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
