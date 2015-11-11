@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import java.util.Set;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.google.gson.Gson;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 
@@ -76,14 +78,14 @@ public class RandomForest implements Serializable {
 		List<boolean[]> records = readInRecordsFromCassandra(cluster, true);
 
 		createPerformanceTable(cluster, true);
-
-		numOfFeaturesToBuildTree = (int) Math.sqrt(features.size());
-
-		numOfTrainRecordsToBuildTree = (int) (FRACTION_TRAINING_RECORDS
-				* records.size());
-
+		
 		features = Arrays.asList(new String[] { "avg_bid", "range_bid",
 				"diff_bid", "delta_bid", "spread" });
+
+		numOfFeaturesToBuildTree = (int) Math.sqrt(features.size());
+		
+		numOfTrainRecordsToBuildTree = (int) (FRACTION_TRAINING_RECORDS
+				* records.size());
 
 		// grow N trees
 		for (int i = 0; i < N; i++) {
@@ -91,7 +93,7 @@ public class RandomForest implements Serializable {
 			trees.add(tree);
 
 			Set<Integer> featureIds = selectFeatures();
-
+			
 			List<boolean[]> trainRecords = new ArrayList<>();
 			List<boolean[]> testRecords = new ArrayList<>();
 
@@ -177,44 +179,6 @@ public class RandomForest implements Serializable {
 	}
 
 	/**
-	 * Serialize forest into a file
-	 * 
-	 * @param forest
-	 * @param fileName
-	 */
-	public static void serialize(RandomForest forest, String fileName) {
-		try {
-			ObjectOutputStream out = new ObjectOutputStream(
-					new FileOutputStream(fileName));
-			out.writeObject(forest);
-			out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Deserialize a RandomForest object from a file
-	 * 
-	 * @param fileName
-	 * @return
-	 */
-	public static RandomForest deserialize(String fileName) {
-		RandomForest forest = null;
-
-		try {
-			ObjectInputStream in = new ObjectInputStream(
-					new FileInputStream(fileName));
-			forest = (RandomForest) in.readObject();
-			in.close();
-		} catch (IOException | ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-
-		return forest;
-	}
-
-	/**
 	 * Randomly select part of features from feature set to build a tree
 	 * 
 	 * @return indexes of selected features
@@ -223,7 +187,7 @@ public class RandomForest implements Serializable {
 		Set<Integer> featureIds = new HashSet<>();
 
 		int n = features.size();
-
+		
 		for (int i = 0; i < numOfFeaturesToBuildTree; i++) {
 			int id;
 			// avoid duplicate IDs

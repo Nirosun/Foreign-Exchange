@@ -2,6 +2,8 @@ package forest;
 
 import com.datastax.driver.core.Cluster;
 
+import util.SerializeUtil;
+
 /**
  * This class is for illustrating the use of the RandomForest class
  * 
@@ -24,6 +26,10 @@ public class Driver {
 		System.out.println("Training: ");
 
 		forest.train(cluster);
+		
+		SerializeUtil.serializeRandomForest(forest, "forest.json");
+		
+		forest = SerializeUtil.deserializeRandomForest("forest.json");
 
 		System.out.println("\nTesting: ");
 

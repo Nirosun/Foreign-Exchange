@@ -11,5 +11,7 @@
 	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/slf4j-simple-1.7.12.jar"/>
 	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/slf4j-api-1.7.12.jar"/>
 	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/cassandra-driver-core-2.1.5.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/hadoop-core-1.2.1.jar"/>
+	<classpathentry kind="lib" path="/Users/niro/Documents/workspace/Foreign-Exchange/commons-logging-1.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

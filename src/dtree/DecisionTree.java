@@ -59,7 +59,7 @@ public class DecisionTree implements Serializable {
 
 			recordIds.add(i);
 		}
-
+		
 		trainNode(root, records, recordIds, featuresIds);
 	}
 
