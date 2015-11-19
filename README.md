@@ -9,3 +9,5 @@ Please check RANDOM_FOREST.md for statistics and analysis for the random forest 
 Please check CASSANDRA.md for introduction of Cassandra related stuff.
 
 Please check MAPREDUCE.md for introduction of MapReduce related stuff.
+
+Please check SPARK_SCALA.md for introduction of the spark-scala random forest program.

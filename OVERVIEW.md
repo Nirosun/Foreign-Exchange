@@ -10,10 +10,16 @@ The structure of this project is like:
 - forest
 	- RandomForest.java
 	- Driver.java
+- mapreduce
+	- FakeInputFormat.java
+	- RandomForestMapper.java
+	- RandomForestMR.java
+	- RandomForestReducer.java
 
 Package forest is for random forest.
 Package dtree is for decision tree.
 Package prep is for data preparation.
+Package mapreduce is for hadoop map-reduce
 
 ## forest
 The forest package contains 2 classes:
