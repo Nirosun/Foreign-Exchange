@@ -2,6 +2,7 @@ package forest;
 
 import com.datastax.driver.core.Cluster;
 
+import util.GlobalParams;
 import util.SerializeUtil;
 
 /**
@@ -20,16 +21,16 @@ public class Driver {
 		// create a random forest
 		RandomForest forest = new RandomForest(N);
 
-		Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1")
+		Cluster cluster = Cluster.builder().addContactPoint(GlobalParams.CASSANDRA_ADDR)
 				.build();
 
 		System.out.println("Training: ");
 
 		forest.train(cluster);
 		
-		SerializeUtil.serializeRandomForest(forest, "forest.json");
+//		SerializeUtil.serializeRandomForest(forest, "forest.json");
 		
-		forest = SerializeUtil.deserializeRandomForest("forest.json");
+//		forest = SerializeUtil.deserializeRandomForest("forest.json");
 
 		System.out.println("\nTesting: ");
 

@@ -11,3 +11,5 @@ Please check CASSANDRA.md for introduction of Cassandra related stuff.
 Please check MAPREDUCE.md for introduction of MapReduce related stuff.
 
 Please check SPARK_SCALA.md for introduction of the spark-scala random forest program.
+
+Please check `final_presentation.pptx` and `final_presentation.pdf` for final non-technical presentations.

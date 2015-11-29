@@ -310,15 +310,15 @@ public class DataPrep {
 		session.execute("DROP TABLE IF EXISTS train_data");
 		session.execute("DROP TABLE IF EXISTS test_data");
 
-//		session.execute(
-//				"CREATE TABLE train_data (id bigint PRIMARY KEY, avg_bid boolean, range_bid boolean, diff_bid boolean, delta_bid boolean, spread boolean, label boolean)");
-//		session.execute(
-//				"CREATE TABLE test_data (id bigint PRIMARY KEY, avg_bid boolean, range_bid boolean, diff_bid boolean, delta_bid boolean, spread boolean, label boolean)");
+		session.execute(
+				"CREATE TABLE train_data (id bigint PRIMARY KEY, avg_bid boolean, range_bid boolean, diff_bid boolean, delta_bid boolean, spread boolean, label boolean)");
+		session.execute(
+				"CREATE TABLE test_data (id bigint PRIMARY KEY, avg_bid boolean, range_bid boolean, diff_bid boolean, delta_bid boolean, spread boolean, label boolean)");
 
-		session.execute(
-				"CREATE TABLE train_data (id bigint PRIMARY KEY, avg_bid int, range_bid int, diff_bid int, delta_bid int, spread int, label int)");
-		session.execute(
-				"CREATE TABLE test_data (id bigint PRIMARY KEY, avg_bid int, range_bid int, diff_bid int, delta_bid int, spread int, label int)");
+//		session.execute(
+//				"CREATE TABLE train_data (id bigint PRIMARY KEY, avg_bid int, range_bid int, diff_bid int, delta_bid int, spread int, label int)");
+//		session.execute(
+//				"CREATE TABLE test_data (id bigint PRIMARY KEY, avg_bid int, range_bid int, diff_bid int, delta_bid int, spread int, label int)");
 
 		
 		insertData(trainFileName, true, session);
@@ -360,8 +360,9 @@ public class DataPrep {
 				sb.append(id);
 
 				for (int i = 0; i < strs.length; i++) {
-					int val = (strs[i].toLowerCase().equals("true")) ? 1 : 0;
-					sb.append(", ").append(val);
+//					int val = (strs[i].toLowerCase().equals("true")) ? 1 : 0;
+//					sb.append(", ").append(val);
+					sb.append(", ").append(strs[i]);
 				}
 
 				sb.append(")");

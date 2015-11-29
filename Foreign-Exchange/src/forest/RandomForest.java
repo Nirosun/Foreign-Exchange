@@ -138,6 +138,11 @@ public class RandomForest implements Serializable {
 	 */
 	private double testInternal(List<boolean[]> records) {
 		int errCnt = 0;
+		
+		int trueToTrue = 0;
+		int trueToFalse = 0;
+		int falseToTrue = 0;
+		int falseToFalse = 0;
 
 		for (boolean[] r : records) {
 			boolean decision = decide(r);
@@ -146,7 +151,19 @@ public class RandomForest implements Serializable {
 			if (decision != r[r.length - 1]) {
 				errCnt++;
 			}
+			
+			if (decision == true && r[r.length - 1] == true) {
+				trueToTrue ++;
+			} else if (decision == false && r[r.length - 1] == true) {
+				trueToFalse ++;
+			} else if (decision == true && r[r.length - 1] == false) {
+				falseToTrue ++;
+			} else {
+				falseToFalse ++;
+			}
 		}
+		
+		System.out.println(trueToTrue + " " + trueToFalse + " " + falseToTrue + " " + falseToFalse);
 
 		double errRate = (double) errCnt / records.size();
 
